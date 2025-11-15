@@ -159,7 +159,7 @@ final class Collection {
                 for (final value in field.values!)
                   code_builder.EnumValue((ev) => ev
                     ..name = field.sanitizeEnumValueName(value)
-                    ..arguments.add(code_builder.literalString(value))
+                    ..arguments.add(code_builder.literalString(field.sanitizeEnumValueName(value)))
                     ..annotations.add(
                       code_builder
                           .refer('JsonValue', 'package:json_annotation/json_annotation.dart')
@@ -198,6 +198,12 @@ final class Collection {
                     })
                     .code,
             ),
+          code_builder.Field(
+                  (f) => f
+                ..name = 'expand'
+                ..modifier = code_builder.FieldModifier.final$
+                ..type = code_builder.refer('Map<String, dynamic>?')
+          ),
         ])
         ..constructors.addAll([
           _defaultConstructor(superFieldsWithoutHidden, fieldsWithoutSuperFieldsAndHidden, fieldsToOverride),

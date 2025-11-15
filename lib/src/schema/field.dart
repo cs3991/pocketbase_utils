@@ -71,7 +71,7 @@ final class Field {
   final String? docs;
 
   String get nameInCamelCase {
-    final nameInCamelCase = ReCase(removeDiacritics(name)).camelCase;
+    final nameInCamelCase = ReCase(sanitizeEnumValueName(name)).camelCase;
     if (dartKeywords.contains(nameInCamelCase)) {
       return '${nameInCamelCase}Field';
     }
@@ -125,7 +125,7 @@ final class Field {
             : code_builder.refer(pocketBaseNullableDateTimeFromJsonMethodName),
       },
       if (name != nameInCamelCase) 'name': code_builder.literal(name),
-      if (type == FieldType.select && isNullable)
+      if (type == FieldType.select && isNullable && maxSelect == 1)
         'unknownEnumValue': code_builder
             .refer('JsonKey', 'package:json_annotation/json_annotation.dart')
             .property('nullForUndefinedEnumValue'),
@@ -180,27 +180,24 @@ final class Field {
   }
 
   String sanitizeEnumValueName(String value) {
-    // 1. remove accents
+    // remove accents
     var s = removeDiacritics(value);
 
-    // 2. replace invalid characters with underscore
-    s = s.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_');
+    // replace invalid characters with character x
+    s = s.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), 'x');
 
-    // 3. trim possible leading/trailing underscores
-    s = s.replaceAll(RegExp(r'^_+|_+$'), '');
+    // avoid empty string
+    if (s.isEmpty) s = 'field';
 
-    // 4. avoid empty string
-    if (s.isEmpty) s = 'value';
-
-    // 5. camelCase
+    // camelCase
     s = ReCase(s).camelCase;
 
-    // 6. Dart names can't start with digits
+    // Dart names can't start with digits
     if (RegExp(r'^[0-9]').hasMatch(s)) {
-      s = '_$s';
+      s = 'field$s';
     }
 
-    // 7. Cannot collide with Dart keywords (including "null")
+    // Cannot collide with Dart keywords
     if (dartKeywords.contains(s)) {
       s = '${s}Value';
     }
@@ -245,6 +242,7 @@ const dartKeywords = {
   'implements',
   'import',
   'in',
+  'index',
   'interface',
   'is',
   'late',

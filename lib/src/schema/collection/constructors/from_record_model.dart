@@ -17,12 +17,16 @@ code_builder.Constructor _fromRecordModelConstructor(String className) {
           ..statements.addAll([
             code_builder
                 .declareFinal('extendedJsonMap')
-                .assign(code_builder.literalMap({
-                  code_builder.literalSpread(): code_builder.refer('recordModel.data'),
-                  for (final recordFieldName in ['id', 'collectionId', 'collectionName'])
-                    code_builder.refer('${className}FieldsEnum.$recordFieldName.nameInSchema'):
-                        code_builder.refer('recordModel.$recordFieldName'),
-                }))
+                .assign(
+                  code_builder.literalMap({
+                    code_builder.literalSpread(): code_builder.refer('recordModel.data'),
+                    for (final recordFieldName in ['id', 'collectionId', 'collectionName'])
+                      code_builder.refer('${className}FieldsEnum.$recordFieldName.nameInSchema'): code_builder.refer(
+                        'recordModel.$recordFieldName',
+                      ),
+                    'expand': code_builder.refer('recordModel.expand'), // added embedded relations
+                  }),
+                )
                 .statement,
             code_builder.InvokeExpression.newOf(
               code_builder.refer('$className.fromJson'),

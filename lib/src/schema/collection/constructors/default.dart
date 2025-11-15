@@ -26,6 +26,12 @@ code_builder.Constructor _defaultConstructor(
               ..required = field.isNonNullable
               ..docs.addAll([if (field.docs != null) field.docs!]),
           ),
+  code_builder.Parameter(
+  (p) => p
+      ..toThis = true
+      ..name = 'expand'
+      ..named = true
+  )
       ])
       ..initializers.add(
         code_builder.refer('super').call(
