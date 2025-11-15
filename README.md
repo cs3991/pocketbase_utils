@@ -1,8 +1,14 @@
+*Forked from https://github.com/utopicnarwhal/pocketbase_utils*
+
+Modified to handle special characters in field names (diacritics, non-alphanumeric characters and dart keywords will be sanitized).
+
+
 # PocketBase Utils
 
 [![pub package](https://img.shields.io/pub/v/pocketbase_utils.svg)](https://pub.dev/packages/pocketbase_utils)
 
 Dart package that creates a binding between your pocketbase server and your Flutter app by generating typesafe boilerplate code of your collections from `pb_schema.json` file.
+
 
 ## Usage
 

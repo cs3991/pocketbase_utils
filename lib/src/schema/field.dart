@@ -4,6 +4,7 @@ import 'package:pocketbase_utils/src/templates/date_time_json_methods.dart';
 import 'package:pocketbase_utils/src/utils/string_utils.dart';
 import 'package:pocketbase_utils/src/utils/utils.dart';
 import 'package:recase/recase.dart';
+import 'package:diacritic/diacritic.dart';
 
 part 'field.g.dart';
 
@@ -69,7 +70,13 @@ final class Field {
 
   final String? docs;
 
-  String get nameInCamelCase => ReCase(name).camelCase;
+  String get nameInCamelCase {
+    final nameInCamelCase = ReCase(removeDiacritics(name)).camelCase;
+    if (dartKeywords.contains(nameInCamelCase)) {
+      return '${nameInCamelCase}Field';
+    }
+    return nameInCamelCase;
+  }
 
   Map<String, dynamic> toJson() => _$FieldToJson(this);
 
@@ -81,6 +88,7 @@ final class Field {
   ///
   /// For bool type fields the [required] property is the "Nonfalsey" toggle in the admin panel.
   bool get isNullable => hidden || (required == false && type != FieldType.bool);
+
   bool get isNonNullable => !isNullable;
 
   code_builder.Reference fieldTypeRef(String className, {bool forceNullable = false}) {
@@ -120,14 +128,16 @@ final class Field {
       if (type == FieldType.select && isNullable)
         'unknownEnumValue': code_builder
             .refer('JsonKey', 'package:json_annotation/json_annotation.dart')
-            .property('nullForUndefinedEnumValue')
+            .property('nullForUndefinedEnumValue'),
     };
 
     if (jsonKeyNamedArguments.isNotEmpty) {
-      result = code_builder.refer('JsonKey', 'package:json_annotation/json_annotation.dart').newInstance(
-        [],
-        jsonKeyNamedArguments,
-      );
+      result = code_builder
+          .refer('JsonKey', 'package:json_annotation/json_annotation.dart')
+          .newInstance(
+            [],
+            jsonKeyNamedArguments,
+          );
     }
 
     return result;
@@ -151,20 +161,122 @@ final class Field {
   List<code_builder.Field> additionalFieldOptionsAsFields() {
     return [
       if (min != null)
-        code_builder.Field((f) => f
-          ..static = true
-          ..modifier = code_builder.FieldModifier.constant
-          ..name = '${name}MinValue'
-          ..assignment = code_builder.Code(min.toString())),
+        code_builder.Field(
+          (f) => f
+            ..static = true
+            ..modifier = code_builder.FieldModifier.constant
+            ..name = '${name}MinValue'
+            ..assignment = code_builder.Code(min.toString()),
+        ),
       if (max != null)
-        code_builder.Field((f) => f
-          ..static = true
-          ..modifier = code_builder.FieldModifier.constant
-          ..name = '${name}MaxValue'
-          ..assignment = code_builder.Code(max.toString()))
+        code_builder.Field(
+          (f) => f
+            ..static = true
+            ..modifier = code_builder.FieldModifier.constant
+            ..name = '${name}MaxValue'
+            ..assignment = code_builder.Code(max.toString()),
+        ),
     ];
   }
+
+  String sanitizeEnumValueName(String value) {
+    // 1. remove accents
+    var s = removeDiacritics(value);
+
+    // 2. replace invalid characters with underscore
+    s = s.replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_');
+
+    // 3. trim possible leading/trailing underscores
+    s = s.replaceAll(RegExp(r'^_+|_+$'), '');
+
+    // 4. avoid empty string
+    if (s.isEmpty) s = 'value';
+
+    // 5. camelCase
+    s = ReCase(s).camelCase;
+
+    // 6. Dart names can't start with digits
+    if (RegExp(r'^[0-9]').hasMatch(s)) {
+      s = '_$s';
+    }
+
+    // 7. Cannot collide with Dart keywords (including "null")
+    if (dartKeywords.contains(s)) {
+      s = '${s}Value';
+    }
+
+    return s;
+  }
+
 }
+
+const dartKeywords = {
+  'abstract',
+  'as',
+  'assert',
+  'async',
+  'await',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'covariant',
+  'default',
+  'deferred',
+  'do',
+  'dynamic',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'extension',
+  'external',
+  'factory',
+  'false',
+  'final',
+  'finally',
+  'for',
+  'Function',
+  'get',
+  'hide',
+  'if',
+  'implements',
+  'import',
+  'in',
+  'interface',
+  'is',
+  'late',
+  'library',
+  'mixin',
+  'native',
+  'new',
+  'null',
+  'on',
+  'operator',
+  'part',
+  'patch',
+  'required',
+  'rethrow',
+  'return',
+  'set',
+  'show',
+  'static',
+  'super',
+  'switch',
+  'sync',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'typedef',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield',
+};
 
 const baseFields = [
   Field(

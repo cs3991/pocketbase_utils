@@ -158,7 +158,7 @@ final class Collection {
               if (field.values != null)
                 for (final value in field.values!)
                   code_builder.EnumValue((ev) => ev
-                    ..name = ReCase(value).camelCase
+                    ..name = field.sanitizeEnumValueName(value)
                     ..arguments.add(code_builder.literalString(value))
                     ..annotations.add(
                       code_builder
